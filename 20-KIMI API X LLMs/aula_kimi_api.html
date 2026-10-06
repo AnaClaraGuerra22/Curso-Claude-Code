@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula: Kimi e sua API em Python</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0b1120;
+            --bg-card: #151e32;
+            --accent: #38bdf8;
+            --accent-2: #a78bfa;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --code-bg: #070b14;
+            --ok: #4ade80;
+            --warn: #fbbf24;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        .deck {
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 6rem;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(60px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(0);
+        }
+
+        .slide.prev { transform: translateX(-60px); }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2 {
+            font-size: 2.6rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+            text-align: center;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            color: var(--accent-2);
+            margin-bottom: 0.6rem;
+        }
+
+        p, li {
+            font-size: 1.25rem;
+            line-height: 1.7;
+            color: var(--text);
+            max-width: 950px;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        ul li {
+            padding-left: 2rem;
+            position: relative;
+            margin-bottom: 0.8rem;
+        }
+
+        ul li::before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .subtitle {
+            font-size: 1.6rem;
+            color: var(--muted);
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent);
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .icon-xl {
+            width: 160px;
+            height: 160px;
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 0 25px rgba(56,189,248,0.25));
+        }
+
+        .icon-lg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 1rem;
+        }
+
+        .icon-sm {
+            width: 52px;
+            height: 52px;
+            margin-bottom: 0.8rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 1150px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1.2rem;
+            padding: 1.8rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(56,189,248,0.3);
+        }
+
+        .card p {
+            font-size: 1.05rem;
+            color: var(--muted);
+        }
+
+        .card strong { color: var(--text); }
+
+        .model-card {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1rem;
+            padding: 1.2rem 1.5rem;
+            max-width: 850px;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .model-card svg {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+        }
+
+        .model-card h3 { margin-bottom: 0.3rem; }
+        .model-card p { font-size: 1rem; color: var(--muted); }
+
+        pre {
+            background: var(--code-bg);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 0.8rem;
+            padding: 1.2rem 1.5rem;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.95rem;
+            overflow-x: auto;
+            max-width: 1000px;
+            width: 100%;
+            line-height: 1.55;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            color: #e2e8f0;
+        }
+
+        .comment { color: #64748b; }
+        .keyword { color: #c084fc; }
+        .string { color: #4ade80; }
+        .func { color: #38bdf8; }
+        .num { color: #fbbf24; }
+
+        .center { text-align: center; }
+        .mt-1 { margin-top: 1rem; }
+        .mt-2 { margin-top: 1.8rem; }
+        .mb-1 { margin-bottom: 1rem; }
+
+        .highlight-box {
+            background: rgba(56, 189, 248, 0.1);
+            border-left: 4px solid var(--accent);
+            padding: 1.2rem 1.5rem;
+            border-radius: 0 0.8rem 0.8rem 0;
+            max-width: 950px;
+            margin-top: 1.5rem;
+        }
+
+        .flow {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .flow-step {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            padding: 1rem 1.3rem;
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .flow-step svg {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 0.5rem;
+        }
+
+        .flow-arrow {
+            font-size: 1.8rem;
+            color: var(--accent);
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+            max-width: 1150px;
+            width: 100%;
+        }
+
+        .illustration {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .small { font-size: 0.95rem; color: var(--muted); }
+
+        .nav {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .nav button {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 0.7rem 1.4rem;
+            border-radius: 0.6rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+
+        .nav button:hover { background: rgba(56, 189, 248, 0.2); }
+
+        .progress {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            transition: width 0.3s ease;
+            z-index: 100;
+        }
+
+        .counter {
+            position: fixed;
+            bottom: 1.6rem;
+            right: 2rem;
+            color: var(--muted);
+            font-size: 0.95rem;
+            z-index: 100;
+        }
+
+        @media (max-width: 1000px) {
+            .two-col { grid-template-columns: 1fr; }
+            .slide { padding: 2rem; }
+            h1 { font-size: 2.4rem; }
+            h2 { font-size: 1.8rem; }
+            p, li { font-size: 1.05rem; }
+            pre { font-size: 0.8rem; }
+            .icon-xl { width: 120px; height: 120px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="deck">
+
+    <!-- Slide 1: Capa -->
+    <section class="slide active center">
+        <svg class="icon-xl" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="90" stroke="url(#grad1)" stroke-width="3" opacity="0.3"/>
+            <path d="M100 40 L115 85 L160 85 L125 115 L138 160 L100 132 L62 160 L75 115 L40 85 L85 85 Z" fill="url(#grad1)"/>
+            <circle cx="100" cy="100" r="35" fill="#0b1120" stroke="#38bdf8" stroke-width="2"/>
+            <path d="M88 100 Q100 88 112 100 Q100 112 88 100" fill="#a78bfa"/>
+            <defs>
+                <linearGradient id="grad1" x1="0" y1="0" x2="200" y2="200">
+                    <stop offset="0%" stop-color="#38bdf8"/>
+                    <stop offset="100%" stop-color="#a78bfa"/>
+                </linearGradient>
+            </defs>
+        </svg>
+        <span class="badge">Workshop de IA</span>
+        <h1>Kimi + Python API</h1>
+        <p class="subtitle">Descubra como usar modelos poderosos de IA com poucas linhas de código</p>
+        <p class="small mt-2">← → navegue com as setas do teclado</p>
+    </section>
+
+    <!-- Slide 2: O que é -->
+    <section class="slide">
+        <h2>O que é o Kimi?</h2>
+        <div class="two-col">
+            <div>
+                <ul>
+                    <li><strong>Kimi</strong> é a família de LLMs da <strong>Moonshot AI</strong>.</li>
+                    <li>API <strong>OpenAI-compatible</strong>: usamos a biblioteca <code>openai</code>.</li>
+                    <li>Destaque para <strong>contexto longo</strong>, ideal para documentos grandes.</li>
+                </ul>
+                <div class="highlight-box">
+                    Pense no Kimi como um "cérebro externo" que você consulta via HTTP.
+                </div>
+            </div>
+            <div class="illustration">
+                <svg class="icon-lg" viewBox="0 0 200 200" fill="none">
+                    <rect x="30" y="110" width="60" height="50" rx="8" fill="#151e32" stroke="#38bdf8" stroke-width="2"/>
+                    <rect x="110" y="40" width="60" height="50" rx="8" fill="#151e32" stroke="#a78bfa" stroke-width="2"/>
+                    <path d="M90 135 L110 65" stroke="#38bdf8" stroke-width="3" stroke-dasharray="6 4"/>
+                    <circle cx="140" cy="65" r="12" fill="#a78bfa"/>
+                    <rect x="130" y="55" width="20" height="20" rx="4" fill="#0b1120"/>
+                    <circle cx="60" cy="135" r="8" fill="#38bdf8"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 3: Modelos -->
+    <section class="slide">
+        <h2>Principais modelos</h2>
+        <div class="model-card">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#38bdf8" stroke-width="2"/><path d="M24 14 L24 24 L32 28" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/></svg>
+            <div>
+                <h3>kimi-latest</h3>
+                <p>Aponta automaticamente para o modelo mais recente. Ótimo para testes e prototipação.</p>
+            </div>
+        </div>
+        <div class="model-card">
+            <svg viewBox="0 0 48 48" fill="none"><rect x="8" y="8" width="32" height="32" rx="6" stroke="#a78bfa" stroke-width="2"/><path d="M16 24 L22 30 L32 18" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div>
+                <h3>kimi-k2-0711-preview</h3>
+                <p>Versão preview avançada, com forte raciocínio e janela de contexto muito grande.</p>
+            </div>
+        </div>
+        <div class="model-card">
+            <svg viewBox="0 0 48 48" fill="none"><polygon points="24,6 42,40 6,40" stroke="#4ade80" stroke-width="2" fill="none"/><circle cx="24" cy="28" r="5" fill="#4ade80"/></svg>
+            <div>
+                <h3>kimi-k2.5</h3>
+                <p>Modelo de produção balanceado: qualidade, velocidade e custo.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 4: Por que usar -->
+    <section class="slide">
+        <h2>Por que usar a API?</h2>
+        <div class="grid">
+            <div class="card center">
+                <svg class="icon-sm" viewBox="0 0 48 48" fill="none"><path d="M8 40 L8 20 L20 20 L20 40" stroke="#38bdf8" stroke-width="2"/><path d="M28 40 L28 12 L40 12 L40 40" stroke="#a78bfa" stroke-width="2"/><path d="M4 40 L44 40" stroke="#38bdf8" stroke-width="2"/></svg>
+                <h3>⚡ Escala</h3>
+                <p>Automatize milhares de chamadas sem intervenção manual.</p>
+            </div>
+            <div class="card center">
+                <svg class="icon-sm" viewBox="0 0 48 48" fill="none"><rect x="8" y="8" width="32" height="24" rx="4" stroke="#38bdf8" stroke-width="2"/><path d="M16 40 L32 40 L24 32 Z" fill="#a78bfa"/></svg>
+                <h3>🧩 Integração</h3>
+                <p>Embuta IA em apps, chatbots, pipelines e agents.</p>
+            </div>
+            <div class="card center">
+                <svg class="icon-sm" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="16" stroke="#38bdf8" stroke-width="2"/><path d="M24 16 L24 24 L30 30" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"/></svg>
+                <h3>🛠️ Controle</h3>
+                <p>Temperature, formato JSON, ferramentas e streaming.</p>
+            </div>
+            <div class="card center">
+                <svg class="icon-sm" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="18" stroke="#4ade80" stroke-width="2"/><path d="M18 28 C18 28 21 32 24 32 C29 32 32 26 32 22 C32 18 29 16 26 16 C22 16 20 19 20 22" stroke="#4ade80" stroke-width="2" fill="none"/></svg>
+                <h3>💰 Custo</h3>
+                <p>Pague por tokens e escolha o modelo certo para cada tarefa.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 5: Setup -->
+    <section class="slide">
+        <h2>Setup inicial</h2>
+        <div class="two-col">
+            <div>
+                <p class="mb-1"><strong>1.</strong> Instale as dependências:</p>
+                <pre><code><span class="comment"># Terminal</span>
+pip install openai python-dotenv</code></pre>
+                <p class="mt-1 mb-1"><strong>2.</strong> Crie o arquivo <code>.env</code>:</p>
+                <pre><code>KIMI_API_KEY=sua_chave_aqui</code></pre>
+                <p class="mt-1 mb-1"><strong>3.</strong> Configure o cliente:</p>
+                <pre><code><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI
+<span class="keyword">import</span> os
+
+client = OpenAI(
+    api_key=os.getenv(<span class="string">"KIMI_API_KEY"</span>),
+    base_url=<span class="string">"https://api.moonshot.cn/v1"</span>
+)
+
+MODEL = <span class="string">"kimi-latest"</span></code></pre>
+            </div>
+            <div class="illustration">
+                <svg class="icon-lg" viewBox="0 0 200 200" fill="none">
+                    <rect x="40" y="40" width="120" height="90" rx="8" fill="#151e32" stroke="#38bdf8" stroke-width="2"/>
+                    <rect x="55" y="60" width="90" height="8" rx="4" fill="#38bdf8" opacity="0.5"/>
+                    <rect x="55" y="80" width="70" height="8" rx="4" fill="#a78bfa" opacity="0.5"/>
+                    <rect x="55" y="100" width="80" height="8" rx="4" fill="#4ade80" opacity="0.5"/>
+                    <path d="M100 130 L100 160" stroke="#38bdf8" stroke-width="3"/>
+                    <rect x="75" y="160" width="50" height="15" rx="4" fill="#151e32" stroke="#38bdf8" stroke-width="2"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 6: Primeira chamada -->
+    <section class="slide">
+        <h2>Primeira chamada à API</h2>
+        <div class="two-col">
+            <div>
+                <p>Envie uma lista de mensagens e receba a resposta:</p>
+                <pre class="mt-1"><code>response = client.chat.completions.create(
+    model=MODEL,
+    messages=[
+        {<span class="string">"role"</span>: <span class="string">"system"</span>,
+         <span class="string">"content"</span>: <span class="string">"Você é um tutor de Python."</span>},
+        {<span class="string">"role"</span>: <span class="string">"user"</span>,
+         <span class="string">"content"</span>: <span class="string">"O que são closures?"</span>}
+    ],
+    temperature=<span class="num">0.7</span>
+)
+
+<span class="func">print</span>(response.choices[<span class="num">0</span>].message.content)</code></pre>
+                <div class="highlight-box">
+                    <code>temperature</code>: 0.0 = determinístico, 1.0 = criativo.
+                </div>
+            </div>
+            <div class="illustration">
+                <svg class="icon-lg" viewBox="0 0 200 200" fill="none">
+                    <rect x="20" y="120" width="70" height="50" rx="10" fill="#151e32" stroke="#38bdf8" stroke-width="2"/>
+                    <text x="35" y="150" fill="#38bdf8" font-size="14" font-family="sans-serif">Você</text>
+                    <rect x="110" y="30" width="70" height="50" rx="10" fill="#151e32" stroke="#a78bfa" stroke-width="2"/>
+                    <text x="120" y="55" fill="#a78bfa" font-size="12" font-family="sans-serif">Kimi</text>
+                    <path d="M90 145 L110 55" stroke="#38bdf8" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+                    <path d="M110 80 L90 120" stroke="#a78bfa" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#arrow)"/>
+                    <defs>
+                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#38bdf8"/>
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 7: Streaming -->
+    <section class="slide">
+        <h2>Respostas em streaming</h2>
+        <div class="two-col">
+            <div>
+                <p>O texto vai aparecendo aos poucos, ideal para chatbots:</p>
+                <pre class="mt-1"><code>stream = client.chat.completions.create(
+    model=MODEL,
+    messages=[{<span class="string">"role"</span>: <span class="string">"user"</span>,
+               <span class="string">"content"</span>: <span class="string">"Conte uma história."</span>}],
+    stream=<span class="keyword">True</span>
+)
+
+<span class="keyword">for</span> chunk <span class="keyword">in</span> stream:
+    content = chunk.choices[<span class="num">0</span>].delta.content
+    <span class="keyword">if</span> content:
+        <span class="func">print</span>(content, end=<span class="string">""</span>, flush=<span class="keyword">True</span>)</code></pre>
+                <p class="small mt-1">Cada <code>chunk</code> traz um pedacinho do texto.</p>
+            </div>
+            <div class="illustration">
+                <svg class="icon-lg" viewBox="0 0 200 200" fill="none">
+                    <rect x="40" y="40" width="120" height="30" rx="6" fill="#151e32" stroke="#38bdf8" stroke-width="2"/>
+                    <rect x="40" y="80" width="90" height="30" rx="6" fill="#151e32" stroke="#38bdf8" stroke-width="2" opacity="0.7"/>
+                    <rect x="40" y="120" width="110" height="30" rx="6" fill="#151e32" stroke="#38bdf8" stroke-width="2" opacity="0.4"/>
+                    <circle cx="170" cy="55" r="6" fill="#38bdf8"/>
+                    <circle cx="150" cy="95" r="6" fill="#a78bfa"/>
+                    <circle cx="170" cy="135" r="6" fill="#4ade80"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 8: Function Calling -->
+    <section class="slide">
+        <h2>Function Calling</h2>
+        <div class="two-col">
+            <div>
+                <p>O modelo decide chamar funções externas para obter dados em tempo real:</p>
+                <pre class="mt-1"><code>tools = [{
+    <span class="string">"type"</span>: <span class="string">"function"</span>,
+    <span class="string">"function"</span>: {
+        <span class="string">"name"</span>: <span class="string">"get_weather"</span>,
+        <span class="string">"description"</span>: <span class="string">"Obtém a previsão do tempo."</span>,
+        <span class="string">"parameters"</span>: {
+            <span class="string">"type"</span>: <span class="string">"object"</span>,
+            <span class="string">"properties"</span>: {
+                <span class="string">"city"</span>: {<span class="string">"type"</span>: <span class="string">"string"</span>}
+            },
+            <span class="string">"required"</span>: [<span class="string">"city"</span>]
+        }
+    }
+}]</code></pre>
+            </div>
+            <div class="illustration">
+                <svg class="icon-lg" viewBox="0 0 200 200" fill="none">
+                    <rect x="70" y="30" width="60" height="50" rx="8" fill="#151e32" stroke="#a78bfa" stroke-width="2"/>
+                    <text x="85" y="60" fill="#a78bfa" font-size="12">Kimi</text>
+                    <rect x="30" y="130" width="60" height="40" rx="8" fill="#151e32" stroke="#38bdf8" stroke-width="2"/>
+                    <text x="40" y="155" fill="#38bdf8" font-size="10">Tool</text>
+                    <path d="M90 80 L70 130" stroke="#a78bfa" stroke-width="2" stroke-dasharray="4 3"/>
+                    <path d="M90 130 L110 80" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4 3"/>
+                    <circle cx="160" cy="150" r="20" fill="#151e32" stroke="#4ade80" stroke-width="2"/>
+                    <text x="150" y="155" fill="#4ade80" font-size="12">DB</text>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 9: JSON Mode -->
+    <section class="slide">
+        <h2>JSON Mode</h2>
+        <div class="two-col">
+            <div>
+                <p>Force o modelo a responder em JSON válido para integração com código:</p>
+                <pre class="mt-1"><code>response = client.chat.completions.create(
+    model=MODEL,
+    messages=[
+        {<span class="string">"role"</span>: <span class="string">"system"</span>,
+         <span class="string">"content"</span>: <span class="string">"Responda sempre em JSON."</span>},
+        {<span class="string">"role"</span>: <span class="string">"user"</span>,
+         <span class="string">"content"</span>: <span class="string">"Extraia produto e nota."</span>}
+    ],
+    response_format={<span class="string">"type"</span>: <span class="string">"json_object"</span>}
+)
+
+data = json.loads(response.choices[<span class="num">0</span>].message.content)</code></pre>
+                <p class="small mt-1">Combine com <code>pydantic</code> para validar schemas.</p>
+            </div>
+            <div class="illustration">
+                <svg class="icon-lg" viewBox="0 0 200 200" fill="none">
+                    <rect x="40" y="40" width="120" height="120" rx="8" fill="#151e32" stroke="#4ade80" stroke-width="2"/>
+                    <text x="55" y="70" fill="#4ade80" font-size="12" font-family="monospace">{"produto":</text>
+                    <text x="55" y="90" fill="#4ade80" font-size="12" font-family="monospace">"Fone",</text>
+                    <text x="55" y="110" fill="#4ade80" font-size="12" font-family="monospace">"nota": 9}</text>
+                    <circle cx="160" cy="160" r="15" fill="#4ade80" opacity="0.2"/>
+                    <path d="M152 160 L158 166 L170 154" stroke="#4ade80" stroke-width="3" fill="none"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 10: Vision -->
+    <section class="slide">
+        <h2>Vision: análise de imagens</h2>
+        <div class="two-col">
+            <div>
+                <p>O Kimi aceita imagens em base64 e descreve ou extrai informações:</p>
+                <pre class="mt-1"><code><span class="keyword">import</span> base64
+
+<span class="keyword">with</span> open(<span class="string">"imagem.png"</span>, <span class="string">"rb"</span>) <span class="keyword">as</span> f:
+    b64 = base64.b64encode(f.read()).decode()
+
+messages = [{
+    <span class="string">"role"</span>: <span class="string">"user"</span>,
+    <span class="string">"content"</span>: [
+        {<span class="string">"type"</span>: <span class="string">"text"</span>,
+         <span class="string">"text"</span>: <span class="string">"Descreva esta imagem."</span>},
+        {<span class="string">"type"</span>: <span class="string">"image_url"</span>,
+         <span class="string">"image_url"</span>: {<span class="string">"url"</span>: f<span class="string">"data:image/png;base64,{b64}"</span>}}
+    ]
+}]</code></pre>
+            </div>
+            <div class="illustration">
+                <svg class="icon-lg" viewBox="0 0 200 200" fill="none">
+                    <rect x="40" y="50" width="120" height="90" rx="8" fill="#151e32" stroke="#38bdf8" stroke-width="2"/>
+                    <circle cx="80" cy="85" r="15" fill="#a78bfa" opacity="0.6"/>
+                    <path d="M45 135 L75 100 L105 120 L135 80 L155 135 Z" fill="#38bdf8" opacity="0.4"/>
+                    <circle cx="150" cy="70" r="10" fill="#fbbf24"/>
+                    <path d="M100 140 L100 165" stroke="#38bdf8" stroke-width="3"/>
+                    <path d="M85 165 L115 165" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 11: Agente -->
+    <section class="slide">
+        <h2>Fluxo de um agente simples</h2>
+        <div class="flow">
+            <div class="flow-step">
+                <svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="15" stroke="#38bdf8" stroke-width="2"/><text x="14" y="25" fill="#38bdf8" font-size="14">?</text></svg>
+                <p class="small">Pergunta</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+                <svg viewBox="0 0 40 40" fill="none"><rect x="8" y="8" width="24" height="24" rx="4" stroke="#a78bfa" stroke-width="2"/><path d="M14 20 L26 20" stroke="#a78bfa" stroke-width="2"/></svg>
+                <p class="small">Escolhe tool</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+                <svg viewBox="0 0 40 40" fill="none"><path d="M8 30 L8 15 L32 15 L32 30" stroke="#4ade80" stroke-width="2" fill="none"/><circle cx="20" cy="10" r="5" stroke="#4ade80" stroke-width="2"/></svg>
+                <p class="small">Executa</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+                <svg viewBox="0 0 40 40" fill="none"><rect x="6" y="10" width="28" height="20" rx="4" stroke="#38bdf8" stroke-width="2"/><path d="M10 18 L18 24 L30 14" stroke="#38bdf8" stroke-width="2" fill="none"/></svg>
+                <p class="small">Resposta</p>
+            </div>
+        </div>
+        <pre class="mt-2"><code><span class="comment"># Ciclo: pergunta → tool → resultado → resposta final</span>
+messages = [
+    {<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: <span class="string">"Quanto custa 1 dólar?"</span>},
+    {<span class="string">"role"</span>: <span class="string">"assistant"</span>, <span class="string">"content"</span>: <span class="string">"Chamando câmbio..."</span>, <span class="string">"tool_calls"</span>: [...]},
+    {<span class="string">"role"</span>: <span class="string">"tool"</span>, <span class="string">"tool_call_id"</span>: <span class="string">"call_123"</span>, <span class="string">"content"</span>: <span class="string">"USD = R$ 5,05"</span>},
+]
+<span class="comment"># Reenvie messages para obter a resposta final</span></code></pre>
+    </section>
+
+    <!-- Slide 12: Boas práticas -->
+    <section class="slide">
+        <h2>Boas práticas</h2>
+        <div class="grid">
+            <div class="card center">
+                <svg class="icon-sm" viewBox="0 0 48 48" fill="none"><rect x="12" y="20" width="24" height="20" rx="4" stroke="#38bdf8" stroke-width="2"/><path d="M18 20 V16 A6 6 0 0 1 30 16 V20" stroke="#38bdf8" stroke-width="2"/></svg>
+                <h3>🔑 Segurança</h3>
+                <p>Use variáveis de ambiente. Nunca deixe a chave no código.</p>
+            </div>
+            <div class="card center">
+                <svg class="icon-sm" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="16" stroke="#a78bfa" stroke-width="2"/><path d="M24 12 L24 24 L32 30" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"/></svg>
+                <h3>🌡️ Temperatura</h3>
+                <p>Baixa para dados, alta para criatividade.</p>
+            </div>
+            <div class="card center">
+                <svg class="icon-sm" viewBox="0 0 48 48" fill="none"><path d="M10 38 L10 20 L20 20 L20 38" stroke="#4ade80" stroke-width="2"/><path d="M28 38 L28 12 L38 12 L38 38" stroke="#4ade80" stroke-width="2"/></svg>
+                <h3>📏 Contexto</h3>
+                <p>Mantenha apenas mensagens relevantes para economizar tokens.</p>
+            </div>
+            <div class="card center">
+                <svg class="icon-sm" viewBox="0 0 48 48" fill="none"><path d="M24 8 L30 18 L42 20 L34 28 L36 40 L24 34 L12 40 L14 28 L6 20 L18 18 Z" stroke="#fbbf24" stroke-width="2" fill="none"/></svg>
+                <h3>🧪 Testes</h3>
+                <p>Valide JSON e trate erros da API com try/except.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 13: Desafios -->
+    <section class="slide">
+        <h2>Desafios práticos</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>💬 Chatbot</h3>
+                <p>Crie um assistente de suporte técnico com system prompt e histórico de conversa.</p>
+            </div>
+            <div class="card">
+                <h3>🔧 Ferramenta de busca</h3>
+                <p>Use function calling para consultar documentos ou uma base de conhecimento.</p>
+            </div>
+            <div class="card">
+                <h3>📊 OCR inteligente</h3>
+                <p>Extraia dados de notas fiscais em imagens com Vision + JSON mode.</p>
+            </div>
+            <div class="card">
+                <h3>📄 Resumo de PDFs</h3>
+                <p>Aproveite o contexto longo do Kimi para resumir documentos extensos.</p>
+            </div>
+        </div>
+        <div class="highlight-box mt-2">
+            🚀 Esses exercícios mostram na prática o poder dos modelos via API.
+        </div>
+    </section>
+
+    <!-- Slide 14: Encerramento -->
+    <section class="slide center">
+        <svg class="icon-xl" viewBox="0 0 200 200" fill="none">
+            <circle cx="100" cy="100" r="80" stroke="url(#grad2)" stroke-width="3" opacity="0.3"/>
+            <path d="M60 100 L90 130 L140 80" stroke="url(#grad2)" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="100" cy="100" r="55" fill="#0b1120" stroke="#38bdf8" stroke-width="2"/>
+            <defs>
+                <linearGradient id="grad2" x1="0" y1="0" x2="200" y2="200">
+                    <stop offset="0%" stop-color="#38bdf8"/>
+                    <stop offset="100%" stop-color="#a78bfa"/>
+                </linearGradient>
+            </defs>
+        </svg>
+        <h1>Obrigado!</h1>
+        <p class="subtitle">Agora é sua vez de experimentar o Kimi em Python.</p>
+        <p class="mt-2">Documentação: <code>platform.moonshot.cn/docs</code></p>
+        <p class="small mt-2">Dúvidas? Mão na massa! 🚀</p>
+    </section>
+
+</div>
+
+<div class="progress" id="progress"></div>
+<div class="counter" id="counter">1 / 14</div>
+
+<div class="nav">
+    <button onclick="prevSlide()">◀ Anterior</button>
+    <button onclick="nextSlide()">Próxima ▶</button>
+</div>
+
+<script>
+    const slides = document.querySelectorAll('.slide');
+    const progress = document.getElementById('progress');
+    const counter = document.getElementById('counter');
+    let current = 0;
+
+    function updateSlides() {
+        slides.forEach((slide, index) => {
+            slide.classList.remove('active', 'prev');
+            if (index === current) slide.classList.add('active');
+            else if (index < current) slide.classList.add('prev');
+        });
+        progress.style.width = ((current + 1) / slides.length * 100) + '%';
+        counter.textContent = (current + 1) + ' / ' + slides.length;
+    }
+
+    function nextSlide() {
+        if (current < slides.length - 1) { current++; updateSlides(); }
+    }
+
+    function prevSlide() {
+        if (current > 0) { current--; updateSlides(); }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault(); nextSlide();
+        } else if (e.key === 'ArrowLeft') {
+            e.preventDefault(); prevSlide();
+        }
+    });
+
+    updateSlides();
+</script>
+
+</body>
+</html>

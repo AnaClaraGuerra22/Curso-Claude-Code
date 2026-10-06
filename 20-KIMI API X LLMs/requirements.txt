@@ -1,0 +1,26 @@
+# APIs de LLMs
+openai>=1.0.0
+anthropic>=0.30.0
+google-generativeai>=0.7.0
+
+# Ambiente e utilidades
+python-dotenv>=1.0.0
+
+# Notebooks
+jupyter>=1.0.0
+ipython>=8.0.0
+
+# Análise de dados e visualização
+pandas>=2.0.0
+matplotlib>=3.7.0
+
+# Processamento de imagens (benchmark multimodal)
+pillow>=10.0.0
+
+# Testes (benchmark de automação/testes/documentação)
+pytest>=8.0.0
+
+# Geração de PDFs (scripts auxiliares)
+markdown>=3.5.0
+weasyprint>=60.0
+fpdf2>=2.7.0
